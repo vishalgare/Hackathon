@@ -28,67 +28,95 @@ st.caption(
 st.divider()
 
 
-def scenario_inputs(title, key):
-    st.header(title)
+def scenario_inputs(title, key, description):
 
-    col1, col2 = st.columns(2)
+    with st.container(border=True):
 
-    with col1:
-        crop = st.selectbox(
-            "Select Crop",
-            list(CROP_DATA.keys()),
-            key=f"crop_{key}"
-        )
+        st.subheader(title)
 
-        area = st.number_input(
-            "Farm Area (acres)",
-            min_value=1.0,
-            max_value=100.0,
-            value=5.0,
-            step=1.0,
-            key=f"area_{key}"
-        )
+        st.caption(description)
 
-        water = st.slider(
-            "Water Availability (units/acre)",
-            min_value=0,
-            max_value=150,
-            value=100,
-            key=f"water_{key}"
-        )
+        col1, col2 = st.columns(2)
 
-    with col2:
-        rainfall = st.selectbox(
-            "Rainfall Condition",
-            ["Low", "Normal", "High"],
-            key=f"rainfall_{key}"
-        )
+        with col1:
 
-        planting = st.selectbox(
-            "Planting Schedule",
-            ["On Time", "Delayed"],
-            key=f"planting_{key}"
-        )
+            crop = st.selectbox(
+                "🌱 Crop",
+                list(CROP_DATA.keys()),
+                key=f"crop_{key}"
+            )
 
-        inputs = st.selectbox(
-            "Input Usage",
-            ["Low", "Normal", "High"],
-            key=f"inputs_{key}"
-        )
+            area = st.number_input(
+                "📐 Farm Area (acres)",
+                min_value=1.0,
+                max_value=100.0,
+                value=5.0,
+                step=1.0,
+                key=f"area_{key}"
+            )
 
-    return crop, area, water, rainfall, planting, inputs
+            water = st.slider(
+                "💧 Water Availability (units/acre)",
+                min_value=0,
+                max_value=150,
+                value=100,
+                key=f"water_{key}"
+            )
+
+        with col2:
+
+            rainfall = st.selectbox(
+                "🌧️ Rainfall Condition",
+                ["Low", "Normal", "High"],
+                key=f"rainfall_{key}"
+            )
+
+            planting = st.selectbox(
+                "📅 Planting Schedule",
+                ["On Time", "Delayed"],
+                key=f"planting_{key}"
+            )
+
+            inputs = st.selectbox(
+                "🧪 Input Usage",
+                ["Low", "Normal", "High"],
+                key=f"inputs_{key}"
+            )
+
+        return crop, area, water, rainfall, planting, inputs
 
 
-scenario_a = scenario_inputs("🌱 Scenario A", "a")
+st.header("⚙️ Configure Farming Scenarios")
+
+scenario_a = scenario_inputs(
+    "🅰️ Scenario A — Baseline",
+    "a",
+    "Use this as the baseline farming plan for comparison."
+)
+
+st.write("")
+
+scenario_b = scenario_inputs(
+    "🅱️ Scenario B — Alternative",
+    "b",
+    "Modify one or more conditions to explore an alternative plan."
+)
+
+st.write("")
+
+compare_col1, compare_col2, compare_col3 = st.columns([1, 2, 1])
+
+with compare_col2:
+    compare_button = st.button(
+        "🔍 Compare Scenarios",
+        type="primary",
+        use_container_width=True
+    )
 
 st.divider()
 
-scenario_b = scenario_inputs("🌾 Scenario B", "b")
 
-st.divider()
-
-
-if st.button("🔍 Compare Scenarios", type="primary"):
+if compare_button:
 
     result_a = simulate(*scenario_a)
     result_b = simulate(*scenario_b)
@@ -577,7 +605,7 @@ if st.button("🔍 Compare Scenarios", type="primary"):
         st.info(
             f"**Largest individual yield impact:** "
             f"{top_factor['factor']} "
-            f"({top_factor['yield_percentage']:+.1f}% yield)"
+            f"({top_factor['yield_percentage']:+.1f}% simulated yield)"
         )
 
     else:
