@@ -215,80 +215,110 @@ if st.button("🔍 Compare Scenarios", type="primary"):
 
     st.subheader("📈 Visual Comparison")
 
-    chart_col1, chart_col2 = st.columns(2)
+    yield_col, water_col = st.columns(2)
 
-    with chart_col1:
-        fig1 = go.Figure()
+    with yield_col:
+        yield_chart = go.Figure()
 
-        fig1.add_trace(
+        yield_chart.add_trace(
             go.Bar(
                 name="Scenario A",
-                x=["Yield", "Water Used"],
-                y=[
-                    result_a["yield"],
-                    result_a["water_used"]
-                ]
+                x=["Scenario A"],
+                y=[result_a["yield"]]
             )
         )
 
-        fig1.add_trace(
+        yield_chart.add_trace(
             go.Bar(
                 name="Scenario B",
-                x=["Yield", "Water Used"],
+                x=["Scenario B"],
+                y=[result_b["yield"]]
+            )
+        )
+
+        yield_chart.update_layout(
+            title="Expected Yield Comparison",
+            yaxis_title="Yield (quintals)",
+            showlegend=False
+        )
+
+        st.plotly_chart(
+            yield_chart,
+            use_container_width=True
+        )
+
+    with water_col:
+        water_chart = go.Figure()
+
+        water_chart.add_trace(
+            go.Bar(
+                name="Required",
+                x=["Scenario A", "Scenario B"],
                 y=[
-                    result_b["yield"],
-                    result_b["water_used"]
+                    result_a["water_required"],
+                    result_b["water_required"]
                 ]
             )
         )
 
-        fig1.update_layout(
-            title="Yield & Water Comparison",
+        water_chart.add_trace(
+            go.Bar(
+                name="Available",
+                x=["Scenario A", "Scenario B"],
+                y=[
+                    result_a["water_available"],
+                    result_b["water_available"]
+                ]
+            )
+        )
+
+        water_chart.update_layout(
+            title="Water Requirement vs Availability",
+            yaxis_title="Water Units",
             barmode="group"
         )
 
         st.plotly_chart(
-            fig1,
+            water_chart,
             use_container_width=True
         )
 
-    with chart_col2:
-        fig2 = go.Figure()
+    financial_chart = go.Figure()
 
-        fig2.add_trace(
-            go.Bar(
-                name="Scenario A",
-                x=["Cost", "Revenue", "Profit"],
-                y=[
-                    result_a["cost"],
-                    result_a["revenue"],
-                    result_a["profit"]
-                ]
-            )
+    financial_chart.add_trace(
+        go.Bar(
+            name="Scenario A",
+            x=["Cost", "Revenue", "Profit"],
+            y=[
+                result_a["cost"],
+                result_a["revenue"],
+                result_a["profit"]
+            ]
         )
+    )
 
-        fig2.add_trace(
-            go.Bar(
-                name="Scenario B",
-                x=["Cost", "Revenue", "Profit"],
-                y=[
-                    result_b["cost"],
-                    result_b["revenue"],
-                    result_b["profit"]
-                ]
-            )
+    financial_chart.add_trace(
+        go.Bar(
+            name="Scenario B",
+            x=["Cost", "Revenue", "Profit"],
+            y=[
+                result_b["cost"],
+                result_b["revenue"],
+                result_b["profit"]
+            ]
         )
+    )
 
-        fig2.update_layout(
-            title="Financial Comparison",
-            barmode="group",
-            yaxis_title="₹"
-        )
+    financial_chart.update_layout(
+        title="Financial Comparison",
+        barmode="group",
+        yaxis_title="₹"
+    )
 
-        st.plotly_chart(
-            fig2,
-            use_container_width=True
-        )
+    st.plotly_chart(
+        financial_chart,
+        use_container_width=True
+    )
 
     st.divider()
 
