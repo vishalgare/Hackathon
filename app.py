@@ -181,6 +181,40 @@ if st.button("🔍 Compare Scenarios", type="primary"):
 
     st.divider()
 
+    st.subheader("💰 Cost Breakdown")
+
+    cost_rows = {
+        "Cost Component": [
+            "Input Cost",
+            "Irrigation Cost",
+            "Labor Cost",
+            "Planting Cost",
+            "Total Cost"
+        ],
+        "Scenario A": [
+            f"₹{result_a['input_cost']:,.0f}",
+            f"₹{result_a['irrigation_cost']:,.0f}",
+            f"₹{result_a['labor_cost']:,.0f}",
+            f"₹{result_a['planting_cost']:,.0f}",
+            f"₹{result_a['cost']:,.0f}"
+        ],
+        "Scenario B": [
+            f"₹{result_b['input_cost']:,.0f}",
+            f"₹{result_b['irrigation_cost']:,.0f}",
+            f"₹{result_b['labor_cost']:,.0f}",
+            f"₹{result_b['planting_cost']:,.0f}",
+            f"₹{result_b['cost']:,.0f}"
+        ]
+    }
+
+    st.dataframe(
+        cost_rows,
+        use_container_width=True,
+        hide_index=True
+    )
+
+    st.divider()
+
     st.subheader("💧 Water Resource Analysis")
 
     water_col1, water_col2, water_col3 = st.columns(3)
