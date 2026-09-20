@@ -1,0 +1,460 @@
+import streamlit as st
+import plotly.graph_objects as go
+from simulation.engine import (
+    simulate,
+    CROP_DATA,
+    calculate_factor_impacts
+)
+
+st.set_page_config(
+    page_title="FarmWise",
+    page_icon="🌾",
+    layout="wide"
+)
+
+st.title("🌾 FarmWise")
+st.subheader("Smart Farming Scenario & Decision Simulator")
+
+st.write(
+    "Create and compare farming scenarios to understand "
+    "yield, water, cost, profit, and risk."
+)
+
+st.caption(
+    "FarmWise is a simulation-based decision-support prototype. "
+    "Results are based on model assumptions and are not agricultural forecasts."
+)
+
+st.divider()
+
+
+def scenario_inputs(title, key):
+    st.header(title)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        crop = st.selectbox(
+            "Select Crop",
+            list(CROP_DATA.keys()),
+            key=f"crop_{key}"
+        )
+
+        area = st.number_input(
+            "Farm Area (acres)",
+            min_value=1.0,
+            max_value=100.0,
+            value=5.0,
+            step=1.0,
+            key=f"area_{key}"
+        )
+
+        water = st.slider(
+            "Water Availability (units/acre)",
+            min_value=0,
+            max_value=150,
+            value=100,
+            key=f"water_{key}"
+        )
+
+    with col2:
+        rainfall = st.selectbox(
+            "Rainfall Condition",
+            ["Low", "Normal", "High"],
+            key=f"rainfall_{key}"
+        )
+
+        planting = st.selectbox(
+            "Planting Schedule",
+            ["On Time", "Delayed"],
+            key=f"planting_{key}"
+        )
+
+        inputs = st.selectbox(
+            "Input Usage",
+            ["Low", "Normal", "High"],
+            key=f"inputs_{key}"
+        )
+
+    return crop, area, water, rainfall, planting, inputs
+
+
+scenario_a = scenario_inputs("🌱 Scenario A", "a")
+
+st.divider()
+
+scenario_b = scenario_inputs("🌾 Scenario B", "b")
+
+st.divider()
+
+
+if st.button("🔍 Compare Scenarios", type="primary"):
+
+    result_a = simulate(*scenario_a)
+    result_b = simulate(*scenario_b)
+
+    st.header("📊 Scenario Comparison")
+
+    comparison = st.columns(5)
+
+    comparison[0].metric(
+        "Expected Yield",
+        f"{result_b['yield']} q",
+        f"{result_b['yield'] - result_a['yield']:+.2f} q"
+    )
+
+    comparison[1].metric(
+        "Water Used",
+        f"{result_b['water_used']} units",
+        f"{result_b['water_used'] - result_a['water_used']:+.2f}"
+    )
+
+    comparison[2].metric(
+        "Estimated Cost",
+        f"₹{result_b['cost']:,.0f}",
+        f"₹{result_b['cost'] - result_a['cost']:+,.0f}"
+    )
+
+    comparison[3].metric(
+        "Expected Profit",
+        f"₹{result_b['profit']:,.0f}",
+        f"₹{result_b['profit'] - result_a['profit']:+,.0f}"
+    )
+
+    comparison[4].metric(
+        "Risk Score",
+        f"{result_b['risk_score']}/100",
+        f"{result_b['risk_score'] - result_a['risk_score']:+d}"
+    )
+
+    st.divider()
+
+    st.subheader("📋 Detailed Comparison")
+
+    rows = {
+        "Metric": [
+            "Crop",
+            "Yield (q)",
+            "Water Required",
+            "Water Available",
+            "Water Used",
+            "Water Deficit",
+            "Cost (₹)",
+            "Revenue (₹)",
+            "Profit (₹)",
+            "Risk Score",
+            "Risk Level"
+        ],
+        "Scenario A": [
+            scenario_a[0],
+            result_a["yield"],
+            result_a["water_required"],
+            result_a["water_available"],
+            result_a["water_used"],
+            result_a["water_deficit"],
+            result_a["cost"],
+            result_a["revenue"],
+            result_a["profit"],
+            result_a["risk_score"],
+            result_a["risk_level"]
+        ],
+        "Scenario B": [
+            scenario_b[0],
+            result_b["yield"],
+            result_b["water_required"],
+            result_b["water_available"],
+            result_b["water_used"],
+            result_b["water_deficit"],
+            result_b["cost"],
+            result_b["revenue"],
+            result_b["profit"],
+            result_b["risk_score"],
+            result_b["risk_level"]
+        ]
+    }
+
+    st.dataframe(
+        rows,
+        use_container_width=True,
+        hide_index=True
+    )
+
+    st.divider()
+
+    st.subheader("💧 Water Resource Analysis")
+
+    water_col1, water_col2, water_col3 = st.columns(3)
+
+    water_col1.metric(
+        "Scenario A Water Deficit",
+        f"{result_a['water_deficit']:.0f} units"
+    )
+
+    water_col2.metric(
+        "Scenario B Water Deficit",
+        f"{result_b['water_deficit']:.0f} units",
+        f"{result_b['water_deficit'] - result_a['water_deficit']:+.0f}"
+    )
+
+    water_col3.metric(
+        "Scenario B Water Availability",
+        f"{result_b['water_available']:.0f} units"
+    )
+
+    if result_b["water_deficit"] > 0:
+        st.warning(
+            f"Scenario B has a water deficit of "
+            f"**{result_b['water_deficit']:.0f} units**."
+        )
+    else:
+        st.success(
+            "Scenario B has sufficient simulated water availability."
+        )
+
+    st.divider()
+
+    st.subheader("📈 Visual Comparison")
+
+    chart_col1, chart_col2 = st.columns(2)
+
+    with chart_col1:
+        fig1 = go.Figure()
+
+        fig1.add_trace(
+            go.Bar(
+                name="Scenario A",
+                x=["Yield", "Water Used"],
+                y=[
+                    result_a["yield"],
+                    result_a["water_used"]
+                ]
+            )
+        )
+
+        fig1.add_trace(
+            go.Bar(
+                name="Scenario B",
+                x=["Yield", "Water Used"],
+                y=[
+                    result_b["yield"],
+                    result_b["water_used"]
+                ]
+            )
+        )
+
+        fig1.update_layout(
+            title="Yield & Water Comparison",
+            barmode="group"
+        )
+
+        st.plotly_chart(
+            fig1,
+            use_container_width=True
+        )
+
+    with chart_col2:
+        fig2 = go.Figure()
+
+        fig2.add_trace(
+            go.Bar(
+                name="Scenario A",
+                x=["Cost", "Revenue", "Profit"],
+                y=[
+                    result_a["cost"],
+                    result_a["revenue"],
+                    result_a["profit"]
+                ]
+            )
+        )
+
+        fig2.add_trace(
+            go.Bar(
+                name="Scenario B",
+                x=["Cost", "Revenue", "Profit"],
+                y=[
+                    result_b["cost"],
+                    result_b["revenue"],
+                    result_b["profit"]
+                ]
+            )
+        )
+
+        fig2.update_layout(
+            title="Financial Comparison",
+            barmode="group",
+            yaxis_title="₹"
+        )
+
+        st.plotly_chart(
+            fig2,
+            use_container_width=True
+        )
+
+    st.divider()
+
+    st.subheader("🔍 What Caused the Difference?")
+
+    differences = []
+
+    if scenario_a[0] != scenario_b[0]:
+        differences.append(
+            f"Crop changed from {scenario_a[0]} to {scenario_b[0]}"
+        )
+
+    if scenario_a[1] != scenario_b[1]:
+        differences.append(
+            f"Farm area changed from {scenario_a[1]} to {scenario_b[1]} acres"
+        )
+
+    if scenario_a[2] != scenario_b[2]:
+        differences.append(
+            f"Water availability changed from {scenario_a[2]} to {scenario_b[2]}"
+        )
+
+    if scenario_a[3] != scenario_b[3]:
+        differences.append(
+            f"Rainfall changed from {scenario_a[3]} to {scenario_b[3]}"
+        )
+
+    if scenario_a[4] != scenario_b[4]:
+        differences.append(
+            f"Planting schedule changed from {scenario_a[4]} to {scenario_b[4]}"
+        )
+
+    if scenario_a[5] != scenario_b[5]:
+        differences.append(
+            f"Input usage changed from {scenario_a[5]} to {scenario_b[5]}"
+        )
+
+    if differences:
+        st.write(
+            "The following factors changed between the two scenarios:"
+        )
+
+        for difference in differences:
+            st.write(f"• {difference}")
+
+    else:
+        st.info(
+            "Both scenarios use the same farming conditions."
+        )
+
+    yield_difference = result_b["yield"] - result_a["yield"]
+    profit_difference = result_b["profit"] - result_a["profit"]
+    risk_difference = result_b["risk_score"] - result_a["risk_score"]
+
+    st.write("### 📌 Impact Summary")
+
+    if yield_difference > 0:
+        st.success(
+            f"Scenario B produces **{abs(yield_difference):.2f} q more yield**."
+        )
+
+    elif yield_difference < 0:
+        st.warning(
+            f"Scenario B produces **{abs(yield_difference):.2f} q less yield**."
+        )
+
+    else:
+        st.info(
+            "Both scenarios have the same expected yield."
+        )
+
+    if profit_difference > 0:
+        st.success(
+            f"Scenario B generates **₹{abs(profit_difference):,.0f} more profit**."
+        )
+
+    elif profit_difference < 0:
+        st.warning(
+            f"Scenario B generates **₹{abs(profit_difference):,.0f} less profit**."
+        )
+
+    else:
+        st.info(
+            "Both scenarios have the same expected profit."
+        )
+
+    if risk_difference > 0:
+        st.warning(
+            f"Scenario B has a **{abs(risk_difference)} point higher risk score**."
+        )
+
+    elif risk_difference < 0:
+        st.success(
+            f"Scenario B has a **{abs(risk_difference)} point lower risk score**."
+        )
+
+    else:
+        st.info(
+            "Both scenarios have the same risk score."
+        )
+
+    st.divider()
+
+    st.subheader("🔬 Factor Impact Analysis")
+
+    factor_impacts = calculate_factor_impacts(
+        scenario_a,
+        scenario_b
+    )
+
+    if factor_impacts:
+
+        impact_rows = []
+
+        for impact in factor_impacts:
+            impact_rows.append({
+                "Factor": impact["factor"],
+                "Yield Impact (q)": impact["yield_impact"],
+                "Yield Change (%)": f"{impact['yield_percentage']:+.1f}%",
+                "Profit Impact (₹)": impact["profit_impact"],
+                "Risk Impact": f"{impact['risk_impact']:+d}"
+            })
+
+        st.dataframe(
+            impact_rows,
+            use_container_width=True,
+            hide_index=True
+        )
+
+        top_factor = factor_impacts[0]
+
+        st.info(
+            f"**Largest individual yield impact:** "
+            f"{top_factor['factor']} "
+            f"({top_factor['yield_percentage']:+.1f}% yield)"
+        )
+
+    else:
+        st.info(
+            "No individual factors changed between the scenarios."
+        )
+
+    st.divider()
+
+    st.subheader("⚠️ Risk & Explanation")
+
+    risk_col1, risk_col2 = st.columns(2)
+
+    with risk_col1:
+        st.write("**Scenario A**")
+
+        st.write(
+            f"Risk: **{result_a['risk_level']} "
+            f"({result_a['risk_score']}/100)**"
+        )
+
+        for reason in result_a["reasons"]:
+            st.write(f"• {reason}")
+
+    with risk_col2:
+        st.write("**Scenario B**")
+
+        st.write(
+            f"Risk: **{result_b['risk_level']} "
+            f"({result_b['risk_score']}/100)**"
+        )
+
+        for reason in result_b["reasons"]:
+            st.write(f"• {reason}")
