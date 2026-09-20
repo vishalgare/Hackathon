@@ -1,5 +1,7 @@
+
 import streamlit as st
 import plotly.graph_objects as go
+import pandas as pd
 
 from simulation.engine import (
     simulate,
@@ -120,9 +122,19 @@ if compare_button:
     result_a = simulate(*scenario_a)
     result_b = simulate(*scenario_b)
 
+    yield_difference = result_b["yield"] - result_a["yield"]
+    water_difference = result_b["water_used"] - result_a["water_used"]
+    cost_difference = result_b["cost"] - result_a["cost"]
+    profit_difference = result_b["profit"] - result_a["profit"]
+    risk_difference = result_b["risk_score"] - result_a["risk_score"]
+
     st.divider()
 
     st.header("📊 Scenario Comparison")
+
+    st.caption(
+        "Scenario A is the baseline. Scenario B shows the alternative outcome."
+    )
 
     col1, col2, col3, col4, col5 = st.columns(5)
 
@@ -130,40 +142,54 @@ if compare_button:
         st.metric(
             "Expected Yield",
             f"{result_a['yield']:.2f} q",
-            f"{result_b['yield'] - result_a['yield']:+.2f} q"
+            f"{yield_difference:+.2f} q"
         )
 
     with col2:
         st.metric(
             "Water Used",
             f"{result_a['water_used']:.0f}",
-            f"{result_b['water_used'] - result_a['water_used']:+.0f}"
+            f"{water_difference:+.0f}"
         )
 
     with col3:
+        if cost_difference < 0:
+            cost_delta = f"-₹{abs(cost_difference):,.0f}"
+        elif cost_difference > 0:
+            cost_delta = f"+₹{cost_difference:,.0f}"
+        else:
+            cost_delta = "₹0"
+
         st.metric(
             "Estimated Cost",
             f"₹{result_a['cost']:,.0f}",
-            f"₹{result_b['cost'] - result_a['cost']:+,.0f}"
+            cost_delta
         )
 
     with col4:
+        if profit_difference < 0:
+            profit_delta = f"-₹{abs(profit_difference):,.0f}"
+        elif profit_difference > 0:
+            profit_delta = f"+₹{profit_difference:,.0f}"
+        else:
+            profit_delta = "₹0"
+
         st.metric(
             "Expected Profit",
             f"₹{result_a['profit']:,.0f}",
-            f"₹{result_b['profit'] - result_a['profit']:+,.0f}"
+            profit_delta
         )
 
     with col5:
         st.metric(
             "Risk Score",
             f"{result_a['risk_score']}/100",
-            f"{result_b['risk_score'] - result_a['risk_score']:+}"
+            f"{risk_difference:+}"
         )
 
     st.subheader("📋 Detailed Comparison")
 
-    comparison_data = {
+    comparison_data = pd.DataFrame({
         "Metric": [
             "Expected Yield",
             "Water Used",
@@ -200,9 +226,13 @@ if compare_button:
             f"{result_b['risk_score']}/100",
             result_b["risk_level"]
         ]
-    }
+    })
 
-    st.table(comparison_data)
+    st.dataframe(
+        comparison_data,
+        use_container_width=True,
+        hide_index=True
+    )
 
     st.subheader("💰 Cost Breakdown")
 
@@ -211,41 +241,53 @@ if compare_button:
     with cost_col1:
         st.write("**Scenario A**")
 
-        st.write(
-            f"Input Cost: ₹{result_a['input_cost']:,.0f}"
-        )
-        st.write(
-            f"Irrigation Cost: ₹{result_a['irrigation_cost']:,.0f}"
-        )
-        st.write(
-            f"Labor Cost: ₹{result_a['labor_cost']:,.0f}"
-        )
-        st.write(
-            f"Planting Cost: ₹{result_a['planting_cost']:,.0f}"
-        )
+        cost_a = pd.DataFrame({
+            "Cost Component": [
+                "Input Cost",
+                "Irrigation Cost",
+                "Labor Cost",
+                "Planting Cost",
+                "Total Cost"
+            ],
+            "Amount": [
+                f"₹{result_a['input_cost']:,.0f}",
+                f"₹{result_a['irrigation_cost']:,.0f}",
+                f"₹{result_a['labor_cost']:,.0f}",
+                f"₹{result_a['planting_cost']:,.0f}",
+                f"₹{result_a['cost']:,.0f}"
+            ]
+        })
 
-        st.write(
-            f"**Total Cost: ₹{result_a['cost']:,.0f}**"
+        st.dataframe(
+            cost_a,
+            use_container_width=True,
+            hide_index=True
         )
 
     with cost_col2:
         st.write("**Scenario B**")
 
-        st.write(
-            f"Input Cost: ₹{result_b['input_cost']:,.0f}"
-        )
-        st.write(
-            f"Irrigation Cost: ₹{result_b['irrigation_cost']:,.0f}"
-        )
-        st.write(
-            f"Labor Cost: ₹{result_b['labor_cost']:,.0f}"
-        )
-        st.write(
-            f"Planting Cost: ₹{result_b['planting_cost']:,.0f}"
-        )
+        cost_b = pd.DataFrame({
+            "Cost Component": [
+                "Input Cost",
+                "Irrigation Cost",
+                "Labor Cost",
+                "Planting Cost",
+                "Total Cost"
+            ],
+            "Amount": [
+                f"₹{result_b['input_cost']:,.0f}",
+                f"₹{result_b['irrigation_cost']:,.0f}",
+                f"₹{result_b['labor_cost']:,.0f}",
+                f"₹{result_b['planting_cost']:,.0f}",
+                f"₹{result_b['cost']:,.0f}"
+            ]
+        })
 
-        st.write(
-            f"**Total Cost: ₹{result_b['cost']:,.0f}**"
+        st.dataframe(
+            cost_b,
+            use_container_width=True,
+            hide_index=True
         )
 
     st.subheader("💧 Water Resource Analysis")
@@ -254,88 +296,156 @@ if compare_button:
 
     with water_col1:
         st.write("**Scenario A**")
-        st.write(
-            f"Required: {result_a['water_required']:.0f} units"
-        )
-        st.write(
-            f"Available: {result_a['water_available']:.0f} units"
-        )
-        st.write(
-            f"Used: {result_a['water_used']:.0f} units"
-        )
-        st.write(
-            f"Deficit: {result_a['water_deficit']:.0f} units"
+
+        water_a = pd.DataFrame({
+            "Water Metric": [
+                "Required",
+                "Available",
+                "Used",
+                "Deficit"
+            ],
+            "Amount": [
+                f"{result_a['water_required']:.0f} units",
+                f"{result_a['water_available']:.0f} units",
+                f"{result_a['water_used']:.0f} units",
+                f"{result_a['water_deficit']:.0f} units"
+            ]
+        })
+
+        st.dataframe(
+            water_a,
+            use_container_width=True,
+            hide_index=True
         )
 
     with water_col2:
         st.write("**Scenario B**")
-        st.write(
-            f"Required: {result_b['water_required']:.0f} units"
-        )
-        st.write(
-            f"Available: {result_b['water_available']:.0f} units"
-        )
-        st.write(
-            f"Used: {result_b['water_used']:.0f} units"
-        )
-        st.write(
-            f"Deficit: {result_b['water_deficit']:.0f} units"
+
+        water_b = pd.DataFrame({
+            "Water Metric": [
+                "Required",
+                "Available",
+                "Used",
+                "Deficit"
+            ],
+            "Amount": [
+                f"{result_b['water_required']:.0f} units",
+                f"{result_b['water_available']:.0f} units",
+                f"{result_b['water_used']:.0f} units",
+                f"{result_b['water_deficit']:.0f} units"
+            ]
+        })
+
+        st.dataframe(
+            water_b,
+            use_container_width=True,
+            hide_index=True
         )
 
     st.subheader("📈 Visual Comparison")
 
-    metrics = [
-        "Yield",
-        "Water Used",
-        "Cost",
-        "Revenue",
-        "Profit"
-    ]
+    chart_col1, chart_col2 = st.columns(2)
 
-    values_a = [
-        result_a["yield"],
-        result_a["water_used"],
-        result_a["cost"],
-        result_a["revenue"],
-        result_a["profit"]
-    ]
+    with chart_col1:
 
-    values_b = [
-        result_b["yield"],
-        result_b["water_used"],
-        result_b["cost"],
-        result_b["revenue"],
-        result_b["profit"]
-    ]
+        yield_fig = go.Figure()
 
-    fig = go.Figure()
+        yield_fig.add_trace(
+            go.Bar(
+                name="Scenario A",
+                x=["Expected Yield"],
+                y=[result_a["yield"]]
+            )
+        )
 
-    fig.add_trace(
+        yield_fig.add_trace(
+            go.Bar(
+                name="Scenario B",
+                x=["Expected Yield"],
+                y=[result_b["yield"]]
+            )
+        )
+
+        yield_fig.update_layout(
+            barmode="group",
+            title="Expected Yield",
+            yaxis_title="Quintals",
+            height=400
+        )
+
+        st.plotly_chart(
+            yield_fig,
+            use_container_width=True
+        )
+
+    with chart_col2:
+
+        water_fig = go.Figure()
+
+        water_fig.add_trace(
+            go.Bar(
+                name="Scenario A",
+                x=["Water Used"],
+                y=[result_a["water_used"]]
+            )
+        )
+
+        water_fig.add_trace(
+            go.Bar(
+                name="Scenario B",
+                x=["Water Used"],
+                y=[result_b["water_used"]]
+            )
+        )
+
+        water_fig.update_layout(
+            barmode="group",
+            title="Water Usage",
+            yaxis_title="Water Units",
+            height=400
+        )
+
+        st.plotly_chart(
+            water_fig,
+            use_container_width=True
+        )
+
+    financial_fig = go.Figure()
+
+    financial_fig.add_trace(
         go.Bar(
             name="Scenario A",
-            x=metrics,
-            y=values_a
+            x=["Cost", "Revenue", "Profit"],
+            y=[
+                result_a["cost"],
+                result_a["revenue"],
+                result_a["profit"]
+            ]
         )
     )
 
-    fig.add_trace(
+    financial_fig.add_trace(
         go.Bar(
             name="Scenario B",
-            x=metrics,
-            y=values_b
+            x=["Cost", "Revenue", "Profit"],
+            y=[
+                result_b["cost"],
+                result_b["revenue"],
+                result_b["profit"]
+            ]
         )
     )
 
-    fig.update_layout(
+    financial_fig.update_layout(
         barmode="group",
-        title="Scenario A vs Scenario B",
-        xaxis_title="Metric",
-        yaxis_title="Value",
-        height=500
+        title="Financial Comparison",
+        xaxis_title="Financial Metric",
+        yaxis_title="Amount (₹)",
+        height=450
     )
 
     st.plotly_chart(
-        fig,
+        financial_fig,
         use_container_width=True
     )
 
@@ -369,30 +479,49 @@ if compare_button:
 
     st.subheader("🎯 Impact Summary")
 
-    yield_difference = result_b["yield"] - result_a["yield"]
-    profit_difference = result_b["profit"] - result_a["profit"]
-    risk_difference = result_b["risk_score"] - result_a["risk_score"]
-    water_difference = result_b["water_used"] - result_a["water_used"]
+    impact_col1, impact_col2, impact_col3, impact_col4 = st.columns(4)
 
-    st.write(
-        f"**Yield change:** {yield_difference:+.2f} q"
-    )
+    with impact_col1:
+        st.metric(
+            "Yield Change",
+            f"{yield_difference:+.2f} q"
+        )
 
-    st.write(
-        f"**Profit change:** ₹{profit_difference:+,.0f}"
-    )
+    with impact_col2:
+        if profit_difference < 0:
+            impact_profit = f"-₹{abs(profit_difference):,.0f}"
+        elif profit_difference > 0:
+            impact_profit = f"+₹{profit_difference:,.0f}"
+        else:
+            impact_profit = "₹0"
 
-    st.write(
-        f"**Risk change:** {risk_difference:+} points"
-    )
+        st.metric(
+            "Profit Change",
+            impact_profit
+        )
 
-    st.write(
-        f"**Water usage change:** {water_difference:+.0f} units"
-    )
+    with impact_col3:
+        st.metric(
+            "Risk Change",
+            f"{risk_difference:+} points"
+        )
+
+    with impact_col4:
+        st.metric(
+            "Water Usage Change",
+            f"{water_difference:+.0f} units"
+        )
 
     st.subheader("💡 Decision Insight")
 
-    if (
+    no_changes = scenario_a == scenario_b
+
+    if no_changes:
+        st.info(
+            "Both scenarios have identical simulated outcomes because no factors were changed."
+        )
+
+    elif (
         result_b["profit"] > result_a["profit"]
         and result_b["risk_score"] <= result_a["risk_score"]
         and result_b["water_deficit"] <= result_a["water_deficit"]
@@ -432,23 +561,35 @@ if compare_button:
 
     st.write("**Key Trade-offs:**")
 
-    if result_b["water_deficit"] != result_a["water_deficit"]:
+    if no_changes:
         st.write(
-            f"• Water deficit changes by "
-            f"{result_b['water_deficit'] - result_a['water_deficit']:+.0f} units."
+            "• No trade-offs — both scenarios use the same inputs."
         )
 
-    if result_b["water_used"] != result_a["water_used"]:
-        st.write(
-            f"• Water usage changes by "
-            f"{result_b['water_used'] - result_a['water_used']:+.0f} units."
-        )
+    else:
+        if result_b["water_deficit"] != result_a["water_deficit"]:
+            st.write(
+                f"• Water deficit changes by "
+                f"{result_b['water_deficit'] - result_a['water_deficit']:+.0f} units."
+            )
 
-    if result_b["cost"] != result_a["cost"]:
-        st.write(
-            f"• Estimated cost changes by "
-            f"₹{result_b['cost'] - result_a['cost']:+,.0f}."
-        )
+        if result_b["water_used"] != result_a["water_used"]:
+            st.write(
+                f"• Water usage changes by "
+                f"{result_b['water_used'] - result_a['water_used']:+.0f} units."
+            )
+
+        if result_b["cost"] != result_a["cost"]:
+            cost_change = result_b["cost"] - result_a["cost"]
+
+            if cost_change < 0:
+                cost_text = f"-₹{abs(cost_change):,.0f}"
+            else:
+                cost_text = f"+₹{cost_change:,.0f}"
+
+            st.write(
+                f"• Estimated cost changes by {cost_text}."
+            )
 
     st.subheader("🔎 Factor Impact Analysis")
 
@@ -459,36 +600,39 @@ if compare_button:
 
     if impacts:
 
-        impact_data = {
-            "Factor": [],
-            "Yield Impact": [],
-            "Yield Change": [],
-            "Profit Impact": [],
-            "Risk Impact": []
-        }
-
-        for impact in impacts:
-            impact_data["Factor"].append(
+        impact_data = pd.DataFrame({
+            "Factor": [
                 impact["factor"]
-            )
-
-            impact_data["Yield Impact"].append(
+                for impact in impacts
+            ],
+            "Yield Impact": [
                 f"{impact['yield_impact']:+.2f} q"
-            )
-
-            impact_data["Yield Change"].append(
+                for impact in impacts
+            ],
+            "Yield Change": [
                 f"{impact['yield_percentage']:+.1f}%"
-            )
-
-            impact_data["Profit Impact"].append(
+                for impact in impacts
+            ],
+            "Profit Impact": [
                 f"₹{impact['profit_impact']:+,.0f}"
-            )
-
-            impact_data["Risk Impact"].append(
+                for impact in impacts
+            ],
+            "Risk Impact": [
                 f"{impact['risk_impact']:+}"
-            )
+                for impact in impacts
+            ]
+        })
 
-        st.table(impact_data)
+        st.dataframe(
+            impact_data,
+            use_container_width=True,
+            hide_index=True
+        )
+
+        st.caption(
+            "Factor impacts show each changed variable individually, "
+            "so they do not necessarily add up to the total scenario change."
+        )
 
         top_factor = impacts[0]
 
@@ -600,3 +744,4 @@ if compare_button:
         "Results should not be treated as agricultural forecasts "
         "or professional farming recommendations."
     )
+
