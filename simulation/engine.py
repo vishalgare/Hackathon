@@ -384,3 +384,94 @@ def calculate_factor_impacts(
     )
 
     return impacts
+def generate_explanation(scenario_a, scenario_b, result_a, result_b):
+    explanations = []
+
+    yield_change = result_b["yield"] - result_a["yield"]
+    profit_change = result_b["profit"] - result_a["profit"]
+    risk_change = result_b["risk_score"] - result_a["risk_score"]
+
+    if scenario_a[0] != scenario_b[0]:
+        explanations.append(
+            f"Crop changed from {scenario_a[0]} to {scenario_b[0]}, affecting yield, water requirement, cost, and revenue."
+        )
+
+    if scenario_a[1] != scenario_b[1]:
+        explanations.append(
+            f"Farm area changed from {scenario_a[1]} to {scenario_b[1]} acres, changing total resource use and cost."
+        )
+
+    if scenario_a[2] != scenario_b[2]:
+        if scenario_b[2] < scenario_a[2]:
+            explanations.append(
+                "Lower water availability increased water stress and reduced simulated yield."
+            )
+        else:
+            explanations.append(
+                "Higher water availability reduced simulated water stress."
+            )
+
+    if scenario_a[3] != scenario_b[3]:
+        explanations.append(
+            f"Rainfall changed from {scenario_a[3]} to {scenario_b[3]}, affecting the simulated weather risk and yield."
+        )
+
+    if scenario_a[4] != scenario_b[4]:
+        if scenario_b[4] == "Delayed":
+            explanations.append(
+                "Delayed planting increased simulated planting risk and reduced yield."
+            )
+        else:
+            explanations.append(
+                "The planting schedule changed, affecting the simulated planting risk."
+            )
+
+    if scenario_a[5] != scenario_b[5]:
+        if scenario_b[5] == "Low":
+            explanations.append(
+                "Lower input usage reduced input cost but also reduced simulated yield."
+            )
+        elif scenario_b[5] == "High":
+            explanations.append(
+                "Higher input usage increased simulated cost and slightly increased simulated yield."
+            )
+
+    if yield_change > 0:
+        yield_summary = (
+            f"Scenario B produces {yield_change:.2f} q more simulated yield."
+        )
+    elif yield_change < 0:
+        yield_summary = (
+            f"Scenario B produces {abs(yield_change):.2f} q less simulated yield."
+        )
+    else:
+        yield_summary = "Both scenarios have the same simulated yield."
+
+    if profit_change > 0:
+        profit_summary = (
+            f"Simulated profit increases by ₹{profit_change:,.0f}."
+        )
+    elif profit_change < 0:
+        profit_summary = (
+            f"Simulated profit decreases by ₹{abs(profit_change):,.0f}."
+        )
+    else:
+        profit_summary = "Simulated profit remains unchanged."
+
+    if risk_change > 0:
+        risk_summary = (
+            f"Risk increases by {risk_change} points."
+        )
+    elif risk_change < 0:
+        risk_summary = (
+            f"Risk decreases by {abs(risk_change)} points."
+        )
+    else:
+        risk_summary = "Risk remains unchanged."
+
+    return {
+        "factors": explanations,
+        "yield_summary": yield_summary,
+        "profit_summary": profit_summary,
+        "risk_summary": risk_summary
+    }
