@@ -406,6 +406,7 @@ if st.button("🔍 Compare Scenarios", type="primary"):
     yield_difference = result_b["yield"] - result_a["yield"]
     profit_difference = result_b["profit"] - result_a["profit"]
     risk_difference = result_b["risk_score"] - result_a["risk_score"]
+    water_difference = result_b["water_used"] - result_a["water_used"]
 
     st.write("### 📌 Impact Summary")
 
@@ -453,6 +454,95 @@ if st.button("🔍 Compare Scenarios", type="primary"):
         st.info(
             "Both scenarios have the same risk score."
         )
+
+    st.divider()
+
+    st.subheader("🧠 Decision Insight")
+
+    if (
+        profit_difference > 0
+        and risk_difference <= 0
+        and result_b["water_deficit"] <= result_a["water_deficit"]
+    ):
+        st.success(
+            "Scenario B shows higher simulated profit with no increase "
+            "in simulated risk or water deficit."
+        )
+
+    elif (
+        profit_difference < 0
+        and risk_difference > 0
+    ):
+        st.warning(
+            "Scenario B has lower simulated profit and higher simulated "
+            "risk compared with Scenario A."
+        )
+
+    elif (
+        profit_difference > 0
+        and risk_difference > 0
+    ):
+        st.warning(
+            "Scenario B increases simulated profit but also increases "
+            "simulated risk. This represents a profit-risk trade-off."
+        )
+
+    elif (
+        profit_difference < 0
+        and risk_difference <= 0
+    ):
+        st.info(
+            "Scenario B reduces simulated profit while also reducing "
+            "simulated risk. This represents a risk-return trade-off."
+        )
+
+    else:
+        st.info(
+            "Scenario B produces a mixed result across the simulated "
+            "yield, profit, water, and risk measures."
+        )
+
+    insight_points = []
+
+    if result_b["water_deficit"] > result_a["water_deficit"]:
+        insight_points.append(
+            f"Water deficit increases by "
+            f"{result_b['water_deficit'] - result_a['water_deficit']:.0f} units."
+        )
+
+    elif result_b["water_deficit"] < result_a["water_deficit"]:
+        insight_points.append(
+            f"Water deficit decreases by "
+            f"{result_a['water_deficit'] - result_b['water_deficit']:.0f} units."
+        )
+
+    if water_difference > 0:
+        insight_points.append(
+            f"Water usage increases by {water_difference:.0f} units."
+        )
+
+    elif water_difference < 0:
+        insight_points.append(
+            f"Water usage decreases by {abs(water_difference):.0f} units."
+        )
+
+    if result_b["cost"] > result_a["cost"]:
+        insight_points.append(
+            f"Total simulated cost increases by "
+            f"₹{result_b['cost'] - result_a['cost']:,.0f}."
+        )
+
+    elif result_b["cost"] < result_a["cost"]:
+        insight_points.append(
+            f"Total simulated cost decreases by "
+            f"₹{result_a['cost'] - result_b['cost']:,.0f}."
+        )
+
+    if insight_points:
+        st.write("**Key trade-offs:**")
+
+        for point in insight_points:
+            st.write(f"• {point}")
 
     st.divider()
 
