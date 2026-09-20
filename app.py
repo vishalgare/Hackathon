@@ -556,3 +556,52 @@ if st.button("🔍 Compare Scenarios", type="primary"):
 
         for reason in result_b["reasons"]:
             st.write(f"• {reason}")
+
+    st.divider()
+
+    with st.expander("ℹ️ Model Assumptions & Limitations"):
+
+        st.write("### Simulation Assumptions")
+
+        st.write(
+            "• Water requirement is represented using simulated "
+            "water units per acre."
+        )
+
+        st.write(
+            "• Irrigation cost is assumed at ₹8 per water unit used."
+        )
+
+        st.write(
+            "• Labor cost is assumed at ₹2,500 per acre."
+        )
+
+        st.write(
+            "• Planting and field preparation cost is assumed at "
+            "₹500 per acre."
+        )
+
+        st.write(
+            "• Input usage affects both simulated yield and input cost."
+        )
+
+        st.write(
+            "• Rainfall, planting schedule, water availability and "
+            "input usage affect the simulated risk score."
+        )
+
+        st.write("### Limitations")
+
+        st.write(
+            "• Yield and risk values are model-based estimates "
+            "for scenario comparison."
+        )
+
+        st.write(
+            "• The simulator is not an agricultural forecasting system."
+        )
+
+        st.write(
+            "• Real farm outcomes depend on soil, location, crop variety, "
+            "season, pests, market prices and other factors."
+        )
