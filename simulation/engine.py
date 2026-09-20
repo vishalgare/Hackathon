@@ -29,35 +29,43 @@ CROP_DATA = {
 def simulate(crop, area, water, rainfall, planting, inputs):
     data = CROP_DATA[crop]
 
-    yield_factor = 1.0
-    risk_score = 0
-    reasons = []
-
     water_ratio = water / data["water_need"]
+
+    water_risk = 0
+    weather_risk = 0
+    planting_risk = 0
+    input_risk = 0
+
+    yield_factor = 1.0
+    reasons = []
 
     if water_ratio < 0.6:
         yield_factor -= 0.25
-        risk_score += 30
-        reasons.append("Low water availability")
+        water_risk = 35
+        reasons.append("Severe water stress")
 
     elif water_ratio < 0.8:
         yield_factor -= 0.10
-        risk_score += 15
-        reasons.append("Moderate water availability")
+        water_risk = 20
+        reasons.append("Moderate water stress")
+
+    elif water_ratio < 1.0:
+        water_risk = 10
+        reasons.append("Slight water limitation")
 
     if rainfall == "Low":
         yield_factor -= 0.15
-        risk_score += 20
+        weather_risk = 25
         reasons.append("Low rainfall")
 
     elif rainfall == "High":
         yield_factor -= 0.05
-        risk_score += 10
+        weather_risk = 15
         reasons.append("Excess rainfall")
 
     if planting == "Delayed":
         yield_factor -= 0.10
-        risk_score += 15
+        planting_risk = 20
         reasons.append("Delayed planting")
 
     input_multiplier = {
@@ -69,8 +77,26 @@ def simulate(crop, area, water, rainfall, planting, inputs):
     yield_factor *= input_multiplier[inputs]
 
     if inputs == "Low":
-        risk_score += 10
+        input_risk = 15
         reasons.append("Low input usage")
+
+    risk_score = (
+        water_risk
+        + weather_risk
+        + planting_risk
+        + input_risk
+    )
+
+    risk_score = min(risk_score, 100)
+
+    if risk_score < 30:
+        risk_level = "Low"
+
+    elif risk_score < 60:
+        risk_level = "Medium"
+
+    else:
+        risk_level = "High"
 
     expected_yield = data["base_yield"] * area * yield_factor
 
@@ -94,17 +120,6 @@ def simulate(crop, area, water, rainfall, planting, inputs):
 
     expected_profit = expected_revenue - total_cost
 
-    risk_score = min(risk_score, 100)
-
-    if risk_score < 30:
-        risk_level = "Low"
-
-    elif risk_score < 60:
-        risk_level = "Medium"
-
-    else:
-        risk_level = "High"
-
     if not reasons:
         reasons.append("Favorable farming conditions")
 
@@ -119,6 +134,12 @@ def simulate(crop, area, water, rainfall, planting, inputs):
         "profit": round(expected_profit, 2),
         "risk_score": risk_score,
         "risk_level": risk_level,
+        "risk_breakdown": {
+            "Water Stress": water_risk,
+            "Weather": weather_risk,
+            "Planting": planting_risk,
+            "Input Usage": input_risk
+        },
         "reasons": reasons
     }
 

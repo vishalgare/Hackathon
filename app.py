@@ -433,6 +433,74 @@ if st.button("🔍 Compare Scenarios", type="primary"):
 
     st.divider()
 
+    st.subheader("📊 Risk Breakdown")
+
+    risk_factors = [
+        "Water Stress",
+        "Weather",
+        "Planting",
+        "Input Usage"
+    ]
+
+    risk_breakdown_rows = []
+
+    for factor in risk_factors:
+        risk_breakdown_rows.append({
+            "Risk Factor": factor,
+            "Scenario A": result_a["risk_breakdown"][factor],
+            "Scenario B": result_b["risk_breakdown"][factor]
+        })
+
+    risk_breakdown_rows.append({
+        "Risk Factor": "Total Risk",
+        "Scenario A": result_a["risk_score"],
+        "Scenario B": result_b["risk_score"]
+    })
+
+    st.dataframe(
+        risk_breakdown_rows,
+        use_container_width=True,
+        hide_index=True
+    )
+
+    risk_chart = go.Figure()
+
+    risk_chart.add_trace(
+        go.Bar(
+            name="Scenario A",
+            x=risk_factors,
+            y=[
+                result_a["risk_breakdown"][factor]
+                for factor in risk_factors
+            ]
+        )
+    )
+
+    risk_chart.add_trace(
+        go.Bar(
+            name="Scenario B",
+            x=risk_factors,
+            y=[
+                result_b["risk_breakdown"][factor]
+                for factor in risk_factors
+            ]
+        )
+    )
+
+    risk_chart.update_layout(
+        title="Risk Contribution by Factor",
+        xaxis_title="Risk Factor",
+        yaxis_title="Risk Points",
+        barmode="group"
+    )
+
+    st.plotly_chart(
+        risk_chart,
+        use_container_width=True
+    )
+
+    st.divider()
+
     st.subheader("⚠️ Risk & Explanation")
 
     risk_col1, risk_col2 = st.columns(2)
